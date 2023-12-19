@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="page">#FFFCF7</color>
+    <color name="error">#FF0F00</color>
+    <color name="primer">#e8e9f3</color>
+    <color name="sekunder">#272635</color>
+    <color name="accent">#b1e5f2</color>
+    <color name="accent2">#cecece</color>
+    <color name="accent3">#a6a6a8</color>
+    <color name="first">#73D0D8</color>
+    <color name="second">#F78C4E</color>
+    <color name="gradientStart">#313A5C</color>
+    <color name="gradientEnd">#365F73</color>
+</resources>
