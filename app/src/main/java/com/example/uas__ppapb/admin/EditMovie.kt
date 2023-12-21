@@ -1,28 +1,17 @@
 package com.example.uas__ppapb.admin
 
-
-import android.content.Context
-import com.example.uas__ppapb.R
-import com.example.uas__ppapb.databinding.EditMovieBinding
-import com.example.uas__ppapb.model.preferences
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
-import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
+import com.example.uas__ppapb.databinding.EditMovieBinding
 import com.example.uas__ppapb.model.DataMovie
-import com.google.android.gms.tasks.OnCompleteListener
-import com.google.android.gms.tasks.OnFailureListener
-import com.google.android.gms.tasks.OnSuccessListener
-import com.google.android.gms.tasks.Task
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import com.google.firebase.storage.UploadTask
@@ -32,20 +21,18 @@ class EditMovie : AppCompatActivity() {
     private lateinit var id: String
     private lateinit var oldImageURL: String
     private lateinit var imageUrl: String
-    private lateinit var databaseReference: DatabaseReference
-    private lateinit var storageReference: StorageReference
 
-    private lateinit var context: Context
-    private lateinit var pref: preferences
     private lateinit var binding: EditMovieBinding
+    private val db = FirebaseFirestore.getInstance()
+    private val storageReference: StorageReference = FirebaseStorage.getInstance().reference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.edit_movie)
+        binding = EditMovieBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        val activityResultLauncher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult(),
-            ActivityResultCallback<ActivityResult> { result ->
+        val activityResultLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
                 if (result.resultCode == Activity.RESULT_OK) {
                     val data: Intent? = result.data
                     uri = data?.data ?: Uri.EMPTY
@@ -54,21 +41,18 @@ class EditMovie : AppCompatActivity() {
                     Toast.makeText(this@EditMovie, "No Image Selected", Toast.LENGTH_SHORT).show()
                 }
             }
-        )
 
         val bundle = intent.extras
         if (bundle != null) {
-            Glide.with(this@EditMovie).load(bundle.getString("Image")).into(binding.imgAddMovie)
             binding.titleInput.setText(bundle.getString("Title"))
             binding.descInput.setText(bundle.getString("Description"))
             binding.genreInput.setText(bundle.getString("Genre"))
             binding.directorInput.setText(bundle.getString("Director"))
             binding.dateInput.setText(bundle.getString("Date"))
             id = bundle.getString("Id") ?: ""
-            oldImageURL = bundle.getString("Image") ?: ""
+            imageUrl = bundle.getString("Image") ?: ""
+            Glide.with(this).load(bundle.getString("Image")).into(binding.imgAddMovie)
         }
-
-        databaseReference = FirebaseDatabase.getInstance().getReference("Android Tutorials").child(id)
 
         binding.imgAddMovie.setOnClickListener {
             val photoPicker = Intent(Intent.ACTION_PICK)
@@ -76,58 +60,64 @@ class EditMovie : AppCompatActivity() {
             activityResultLauncher.launch(photoPicker)
         }
 
-        binding.updateButtonMovie.setOnClickListener {
+        binding.editButtonMovie.setOnClickListener {
             saveData()
+            // You can remove the following line to stay on the EditMovie activity after saving
             val intent = Intent(this@EditMovie, ListMovieActivity::class.java)
             startActivity(intent)
         }
     }
 
-    fun saveData() {
-        storageReference = FirebaseStorage.getInstance().getReference().child("Android Images")
-        uri?.lastPathSegment?.let {
-            storageReference = storageReference.child(it)
-        } ?: run {
-            // Handle the case where uri is null
-            Toast.makeText(this@EditMovie, "Image not selected", Toast.LENGTH_SHORT).show()
-        }
+    private fun saveData() {
+        val storageReference: StorageReference =
+            FirebaseStorage.getInstance().reference.child("Android Images")
+                .child(uri?.lastPathSegment!!)
 
-
-        val builder = AlertDialog.Builder(this@EditMovie)
-        builder.setCancelable(false)
-        val dialog = builder.create()
-        dialog.show()
-
-        storageReference.putFile(uri).addOnSuccessListener(OnSuccessListener<UploadTask.TaskSnapshot> { taskSnapshot ->
-            val uriTask: Task<Uri> = taskSnapshot.storage.downloadUrl
-            while (!uriTask.isComplete);
-            val urlImage: Uri = uriTask.result
-            imageUrl = urlImage.toString()
-            updateData()
-            dialog.dismiss()
-        }).addOnFailureListener(OnFailureListener { e ->
-            dialog.dismiss()
-        })
+        storageReference.putFile(uri!!)
+            .addOnSuccessListener {
+                storageReference.downloadUrl.addOnCompleteListener { uriTask ->
+                    if (uriTask.isSuccessful) {
+                        val urlImage = uriTask.result.toString()
+                        imageUrl = urlImage
+                        updateData()
+                    } else {
+                        Toast.makeText(
+                            this@EditMovie,
+                            "Failed to get download URL",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(
+                    this@EditMovie,
+                    "Failed to upload image: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
     }
 
-    fun updateData() {
+    private fun updateData() {
         val title = binding.titleInput.text.toString().trim()
         val desc = binding.descInput.text.toString().trim()
         val genre = binding.genreInput.text.toString().trim()
         val director = binding.directorInput.text.toString().trim()
         val date = binding.dateInput.text.toString().trim()
 
-        val dataClass = DataMovie(title, desc, genre, director, date, imageUrl)
+        val dataClass = DataMovie(id, title, desc, genre, director, date, imageUrl)
 
-        databaseReference.setValue(dataClass).addOnCompleteListener(OnCompleteListener<Void> { task ->
-            if (task.isSuccessful) {
-                val reference: StorageReference = FirebaseStorage.getInstance().getReferenceFromUrl(oldImageURL)
+        db.collection("data_movie").document(id).set(dataClass)
+            .addOnSuccessListener {
+                // Delete the old image from Firebase Storage
+                val reference: StorageReference =
+                    FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl)
                 reference.delete()
                 Toast.makeText(this@EditMovie, "Updated", Toast.LENGTH_SHORT).show()
-                finish()
+                // You might want to finish() the activity here or handle it differently
             }
-        }).addOnFailureListener(OnFailureListener { e ->
-            Toast.makeText(this@EditMovie, e.message.toString(), Toast.LENGTH_SHORT).show()
-        })
+            .addOnFailureListener { e ->
+                Toast.makeText(this@EditMovie, e.message.toString(), Toast.LENGTH_SHORT).show()
+            }
     }
 }

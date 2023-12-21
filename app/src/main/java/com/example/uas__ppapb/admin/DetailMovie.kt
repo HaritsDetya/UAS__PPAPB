@@ -13,54 +13,90 @@ import com.github.clans.fab.FloatingActionButton
 import com.google.android.gms.tasks.OnSuccessListener
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 
 class DetailMovie : AppCompatActivity() {
     private lateinit var binding: DetailMovieBinding
-    private lateinit var detailDesc: TextView
-    private lateinit var detailImage: ImageView
-    private lateinit var detailTitle: TextView
-    private lateinit var deleteButton: FloatingActionButton
-    private lateinit var editButton: FloatingActionButton
-    private lateinit var detailLang: TextView
-    private var key = ""
     private var imageUrl = ""
+    private var id = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.detail_movie)
+        binding = DetailMovieBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         val bundle = intent.extras
         if (bundle != null) {
-            detailDesc.text = bundle.getString("Description")
-            detailTitle.text = bundle.getString("Title")
-            detailLang.text = bundle.getString("Language")
-            key = bundle.getString("Key") ?: ""
+            binding.deskripsi.text = bundle.getString("Description") // Use the correct key
+            binding.title.text = bundle.getString("Title")
+            binding.genreButton.text = bundle.getString("Genre")
+
+            val date = bundle.getString("Date")
+            val formattedDate = "($date)"
+            binding.date.text = formattedDate
+
+            binding.director.text = bundle.getString("Director")
             imageUrl = bundle.getString("Image") ?: ""
-            Glide.with(this).load(bundle.getString("Image")).into(detailImage)
+            Glide.with(this).load(bundle.getString("Image")).into(binding.image)
+            id = bundle.getString("Id") ?: ""
         }
 
-        deleteButton.setOnClickListener {
-            val reference: DatabaseReference = FirebaseDatabase.getInstance().getReference("Android Tutorials")
-            val storage: FirebaseStorage = FirebaseStorage.getInstance()
+        binding.deleteButton.setOnClickListener {
+            val firestore = FirebaseFirestore.getInstance()
+            val storage = FirebaseStorage.getInstance()
 
-            val storageReference: StorageReference = storage.getReferenceFromUrl(imageUrl)
-            storageReference.delete().addOnSuccessListener(OnSuccessListener {
-                reference.child(key).removeValue()
-                Toast.makeText(this@DetailMovie, "Deleted", Toast.LENGTH_SHORT).show()
-                startActivity(Intent(applicationContext, ListMovieActivity::class.java))
-                finish()
-            })
+            val docRef = firestore.collection("data_movie").document(id)
+            docRef.get()
+                .addOnSuccessListener { document ->
+                    if (document != null) {
+                        // Correctly retrieve imageUrl from Firestore document
+                        val imageUrl = document.get("imageUrl").toString()
+
+                        // Delete image from Storage
+                        if (imageUrl != null) {
+                            val storageReference = storage.getReferenceFromUrl(imageUrl)
+                            storageReference.delete()
+                                .addOnSuccessListener {
+                                    // Delete document from Firestore
+                                    firestore.collection("data_movie").document(id).delete()
+                                        .addOnSuccessListener {
+                                            Toast.makeText(this@DetailMovie, "Deleted", Toast.LENGTH_SHORT).show()
+                                            startActivity(Intent(applicationContext, ListMovieActivity::class.java))
+                                            finish()
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Toast.makeText(this@DetailMovie, "Error deleting document: $e", Toast.LENGTH_SHORT).show()
+                                        }
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(this@DetailMovie, "Error deleting image: $e", Toast.LENGTH_SHORT).show()
+                                }
+                        } else {
+                            Toast.makeText(this@DetailMovie, "Image URL is null", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(this@DetailMovie, "Document not found", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    Toast.makeText(this@DetailMovie, "Error getting document: $exception", Toast.LENGTH_SHORT).show()
+                }
         }
 
-        editButton.setOnClickListener {
+
+
+        binding.editButton.setOnClickListener {
+            val originalDate = binding.date.text.toString().replace("(", "").replace(")", "")
             val intent = Intent(this@DetailMovie, EditMovie::class.java)
-                .putExtra("Title", detailTitle.text.toString())
-                .putExtra("Description", detailDesc.text.toString())
-                .putExtra("Language", detailLang.text.toString())
+                .putExtra("Title", binding.title.text.toString())
+                .putExtra("Description", binding.deskripsi.text.toString())
+                .putExtra("Genre", binding.genreButton.text.toString())
+                .putExtra("Date", originalDate)
+                .putExtra("Director", binding.director.text.toString())
                 .putExtra("Image", imageUrl)
-                .putExtra("Key", key)
+                .putExtra("Id", id)
             startActivity(intent)
         }
     }

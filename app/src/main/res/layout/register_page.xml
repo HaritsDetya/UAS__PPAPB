@@ -90,6 +90,7 @@
                     app:layout_constraintTop_toTopOf="parent">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/username_input"
+                        style="@style/Widget.Material3.TextInputEditText.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:maxLength="20"/>
@@ -120,6 +121,7 @@
                     app:layout_constraintTop_toTopOf="parent">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/email_input"
+                        style="@style/Widget.Material3.TextInputEditText.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:maxLength="20"/>
@@ -148,6 +150,7 @@
                     app:layout_constraintTop_toTopOf="parent">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/password_input"
+                        style="@style/Widget.Material3.TextInputEditText.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:maxLength="20"
@@ -177,6 +180,7 @@
                     app:layout_constraintTop_toTopOf="parent">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/confirm_password_input"
+                        style="@style/Widget.Material3.TextInputEditText.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:maxLength="20"

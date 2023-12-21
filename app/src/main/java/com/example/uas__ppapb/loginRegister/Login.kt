@@ -3,106 +3,56 @@ package com.example.uas__ppapb.loginRegister
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.fragment.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.fragment.app.Fragment
 import com.example.uas__ppapb.R
 import com.example.uas__ppapb.admin.ListMovieActivity
 import com.example.uas__ppapb.databinding.LoginPageBinding
-import com.example.uas__ppapb.model.DataUser
-import com.example.uas__ppapb.model.preferences
 import com.example.uas__ppapb.user.Home
-import com.google.firebase.Firebase
+import com.example.uas__ppapb.user.MainActivity
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.getValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.firestore
 
 class Login : Fragment() {
-    private val database: DatabaseReference = FirebaseDatabase.getInstance().reference
-    private lateinit var context: Context
-    private var db = Firebase.firestore
     private lateinit var binding: LoginPageBinding
     private lateinit var firebaseAuth: FirebaseAuth
-    private lateinit var pref: preferences
+    private val firestore = FirebaseFirestore.getInstance()
 
-    companion object{
-        const val EXTRA_NAME = "extra_name"
+    companion object {
+        const val EXTRA_EMAIL = "extra_email"
         const val EXTRA_PASS = "extra_pass"
     }
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = LoginPageBinding.inflate(layoutInflater)
-        val view = binding.root
-        context = view.context
-        pref = preferences(context)
 
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        binding = LoginPageBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         firebaseAuth = FirebaseAuth.getInstance()
-        db = FirebaseFirestore.getInstance()
 
         with(binding) {
             login.setOnClickListener {
-                val username = usernameInput.text.toString()
-                val password = passwordInput.text.toString()
-                val sharedPreferences = requireActivity().getSharedPreferences("SHARED_PREF", Context.MODE_PRIVATE)
+                val email = emailInput.text.toString().trim()
+                val password = passwordInput.text.toString().trim()
 
-                if (username.isEmpty() || password.isEmpty()){
-                    binding.usernameInput.error = "Please fill all the fields"
-                    binding.passwordInput.error = "Please fill all the fields"
+                if (email.isEmpty() || password.isEmpty()) {
+                    Toast.makeText(requireContext(), "Please fill all the fields", Toast.LENGTH_SHORT).show()
                 } else {
-                    val query: com.google.firebase.database.Query = database.child("users").orderByChild("username").equalTo(username)
-                    query.addListenerForSingleValueEvent(object : com.google.firebase.database.ValueEventListener {
-                        override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
-                            if (snapshot.exists()) {
-                                for (item in snapshot.children){
-                                    val user = item.getValue<DataUser>()
-                                    if (user != null){
-                                        if (user.password == password){
-                                            val editor = sharedPreferences.edit()
-                                            editor.putString("username", username)
-                                            editor.putString("password", password)
-                                            editor.apply()
-                                            pref.prefStatus = true
-                                            pref.prefLevel = user.role
-                                            if (user.role == "admin"){
-                                                val intentToLoginPageActivity = Intent(requireContext(), ListMovieActivity::class.java)
-                                                intentToLoginPageActivity.putExtra(EXTRA_NAME, username)
-                                                intentToLoginPageActivity.putExtra(EXTRA_PASS, password)
-                                                startActivity(intentToLoginPageActivity)
-                                            } else {
-                                                val intentToLoginPageActivity = Intent(requireContext(), Home::class.java)
-                                                intentToLoginPageActivity.putExtra(EXTRA_NAME, username)
-                                                intentToLoginPageActivity.putExtra(EXTRA_PASS, password)
-                                                startActivity(intentToLoginPageActivity)
-                                            }
-                                        } else {
-                                            Toast.makeText(requireContext(), "Username atau Password tidak sesuai", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                }
-                            } else {
-                                Toast.makeText(requireContext(), "Username atau Password tidak sesuai", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-
-                        override fun onCancelled(error: com.google.firebase.database.DatabaseError) {
-                            Toast.makeText(requireContext(), "Username atau Password tidak sesuai", Toast.LENGTH_SHORT).show()
-                        }
-                    })
-                    firebaseAuth.signInWithEmailAndPassword(username, password)
+                    firebaseAuth.signInWithEmailAndPassword(email, password)
                         .addOnCompleteListener { task ->
-                            if (task.isSuccessful){
-                                val intentToLoginPageActivity =
-                                    Intent(requireContext(), Home::class.java)
-                                intentToLoginPageActivity.putExtra(EXTRA_NAME, username)
-                                intentToLoginPageActivity.putExtra(EXTRA_PASS, password)
-                                startActivity(intentToLoginPageActivity)
+                            if (task.isSuccessful) {
+                                isUserAdmin(email)
                             } else {
-                                Toast.makeText(requireContext(), "Username atau Password tidak sesuai", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(requireContext(), "Username or Password is incorrect", Toast.LENGTH_SHORT).show()
                             }
                         }
                 }
@@ -110,24 +60,71 @@ class Login : Fragment() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        if (pref.prefStatus){
-            if (pref.prefLevel == "admin"){
-                val intentToLoginPageActivity = Intent(requireContext(), ListMovieActivity::class.java)
-                startActivity(intentToLoginPageActivity)
+
+
+    private fun isUserAdmin(email: String) {
+        val user = firebaseAuth.currentUser
+        if (user != null) {
+            if (user.email == "harits@gmail.com") {
+                startActivity(Intent(requireContext(), ListMovieActivity::class.java).apply {
+                    putExtra(EXTRA_EMAIL, email)
+                    putExtra(EXTRA_PASS, binding.passwordInput.text.toString().trim())
+                })
             } else {
-                val intentToLoginPageActivity = Intent(requireContext(), Home::class.java)
-                startActivity(intentToLoginPageActivity)
+                startActivity(Intent(requireContext(), MainActivity::class.java).apply {
+                    putExtra(EXTRA_EMAIL, email)
+                    putExtra(EXTRA_PASS, binding.passwordInput.text.toString().trim())
+                })
             }
         }
-    }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.login_page, container, false)
+//        firestore.collection("admin").document(email).get()
+//            .addOnCompleteListener { adminTask ->
+//                if (adminTask.isSuccessful) {
+//                    val documentSnapshot = adminTask.result
+//
+//                    if (documentSnapshot != null && documentSnapshot.exists()) {
+//                        // Get all fields and their values as a map
+//                        val fieldMap = documentSnapshot.data ?: emptyMap()
+//
+//                        // Iterate through the fields and their values
+//                        for ((fieldName, value) in fieldMap) {
+//                            Log.d("LoginFragment", "Field: $fieldName, Value: $value")
+//
+//                            // Adjust the condition based on the field you're looking for
+//                            if (fieldName == "email" && value == "harits@gmail.com") {
+//                                // Perform the action for the specific field value
+//                                Log.d("LoginFragment", "User is an admin")
+//                                startActivity(Intent(requireContext(), ListMovieActivity::class.java).apply {
+//                                    putExtra(EXTRA_EMAIL, email)
+//                                    putExtra(EXTRA_PASS, binding.passwordInput.text.toString().trim())
+//                                })
+//                                return@addOnCompleteListener
+//                            }
+//                        }
+//
+//                        // If the specific condition is not met, you can handle it here
+//                        Log.d("LoginFragment", "User is not an admin")
+//                        startActivity(Intent(requireContext(), MainActivity::class.java).apply {
+//                            putExtra(EXTRA_EMAIL, email)
+//                            putExtra(EXTRA_PASS, binding.passwordInput.text.toString().trim())
+//                        })
+//                    } else {
+//                        // Document does not exist
+//                        Log.d("LoginFragment", "Admin document does not exist for user")
+//                        startActivity(Intent(requireContext(), MainActivity::class.java).apply {
+//                            putExtra(EXTRA_EMAIL, email)
+//                            putExtra(EXTRA_PASS, binding.passwordInput.text.toString().trim())
+//                        })
+//                    }
+//                } else {
+//                    // Handle errors
+//                    Log.e("LoginFragment", "Error checking admin status", adminTask.exception)
+//                    startActivity(Intent(requireContext(), MainActivity::class.java).apply {
+//                        putExtra(EXTRA_EMAIL, email)
+//                        putExtra(EXTRA_PASS, binding.passwordInput.text.toString().trim())
+//                    })
+//                }
+//            }
     }
 }

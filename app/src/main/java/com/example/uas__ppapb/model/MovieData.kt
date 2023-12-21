@@ -1,12 +1,7 @@
 package com.example.uas__ppapb.model
 
-import androidx.annotation.NonNull
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "movie")
-data class DataMovie(
-    @PrimaryKey val id: String = "",
+data class MovieData(
+    val id: String = "",
     val title: String = "",
     val description: String = "",
     val date: String = "",

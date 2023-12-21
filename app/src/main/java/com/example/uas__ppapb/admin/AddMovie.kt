@@ -2,6 +2,7 @@ package com.example.uas__ppapb.admin
 
 import android.app.Activity
 import android.content.Intent
+import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -10,21 +11,22 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.example.uas__ppapb.databinding.AddMovieBinding
 import com.example.uas__ppapb.model.DataMovie
-import com.google.android.gms.tasks.OnCompleteListener
-import com.google.android.gms.tasks.OnFailureListener
-import com.google.android.gms.tasks.OnSuccessListener
-import com.google.android.gms.tasks.Task
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
-import com.google.firebase.storage.UploadTask
 import java.text.DateFormat
 import java.util.*
 
 class AddMovie : AppCompatActivity() {
     private lateinit var binding: AddMovieBinding
-    private var imageURL: String? = null
+    private val db = Firebase.firestore
     private var uri: Uri? = null
+    private lateinit var id: String
+    private lateinit var imageURL: String
+    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var storage: FirebaseStorage
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +53,6 @@ class AddMovie : AppCompatActivity() {
 
         binding.saveButtonMovie.setOnClickListener {
             saveData()
-            finish()
         }
     }
 
@@ -60,40 +61,55 @@ class AddMovie : AppCompatActivity() {
             .child(uri?.lastPathSegment!!)
 
         storageReference.putFile(uri!!)
-            .addOnSuccessListener(OnSuccessListener<UploadTask.TaskSnapshot> { taskSnapshot ->
-                val uriTask: Task<Uri> = taskSnapshot.storage.downloadUrl
-                while (!uriTask.isComplete);
-                val urlImage = uriTask.result
-                imageURL = urlImage.toString()
-                uploadData()
-            })
-            .addOnFailureListener(OnFailureListener {
-            })
+            .addOnSuccessListener {
+                storageReference.downloadUrl.addOnCompleteListener { uriTask ->
+                    if (uriTask.isSuccessful) {
+                        val urlImage = uriTask.result.toString()
+                        imageURL = urlImage
+                        uploadData()
+                    } else {
+                        Toast.makeText(this@AddMovie, "Failed to get download URL", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this@AddMovie, "Failed to upload image: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun uploadData() {
+        val id = intent.getStringExtra("id") ?: ""
         val title: String = binding.titleInput.text.toString()
         val desc: String = binding.descInput.text.toString()
         val genre: String = binding.genreInput.text.toString()
         val director: String = binding.directorInput.text.toString()
         val date: String = binding.dateInput.text.toString()
 
-        val dataClass = imageURL?.let { DataMovie(title, desc, genre, director, date, it) }
+        val dataClass = DataMovie(
+            id,
+            title,
+            desc,
+            date,
+            genre,
+            director,
+            imageURL
+        )
+        val currentDate: String =
+            DateFormat.getDateTimeInstance().format(Calendar.getInstance().time)
 
-        // We are changing the child from title to currentDate,
-        // because we will be updating title as well and it may affect child value.
-        val currentDate: String = DateFormat.getDateTimeInstance().format(Calendar.getInstance().time)
-
-        FirebaseDatabase.getInstance().getReference("Android Tutorials").child(currentDate)
-            .setValue(dataClass)
-            .addOnCompleteListener(OnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Toast.makeText(this@AddMovie, "Saved", Toast.LENGTH_SHORT).show()
-                    finish()
-                }
-            })
-            .addOnFailureListener(OnFailureListener { e ->
-                Toast.makeText(this@AddMovie, e.message.toString(), Toast.LENGTH_SHORT).show()
-            })
+        db.collection("data_movie").document().set(dataClass)
+            .addOnSuccessListener {
+                Toast.makeText(this@AddMovie, "Saved", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this@AddMovie, ListMovieActivity::class.java)
+                startActivity(intent)
+                finish()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(
+                    this@AddMovie,
+                    "Failed to save data: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
     }
 }
