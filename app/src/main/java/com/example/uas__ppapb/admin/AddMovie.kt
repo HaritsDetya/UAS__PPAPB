@@ -1,5 +1,6 @@
 package com.example.uas__ppapb.admin
 
+import android.Manifest
 import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -17,6 +18,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.example.uas__ppapb.R
@@ -109,30 +111,22 @@ class AddMovie : AppCompatActivity() {
         createNotificationChannel()
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-        builder.setSmallIcon(R.drawable.baseline_notifications_active_24)
+            .setSmallIcon(R.drawable.baseline_notifications_active_24)
             .setContentTitle("New Movie Added")
             .setContentText("A new movie has been added to the database")
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
-        val intent = Intent(this, ListMovieActivity::class.java)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        intent.putExtra("message", "A new movie has been added to the database")
-
-        val pendingIntent =
-            PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
-        builder.setContentIntent(pendingIntent)
-
-        val notificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = notificationManager.getNotificationChannel(CHANNEL_ID)
-            if (channel == null) {
-                createNotificationChannel()
+        with(NotificationManagerCompat.from(this)) {
+            if (ActivityCompat.checkSelfPermission(
+                    this@AddMovie,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return
             }
+            notify(1, builder.build())
         }
-        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
     }
 
     private fun saveData() {

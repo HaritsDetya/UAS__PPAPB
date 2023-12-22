@@ -1,19 +1,31 @@
 package com.example.uas__ppapb.user
 
 import android.content.Context
+import android.net.ConnectivityManager
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.uas__ppapb.R
 import com.example.uas__ppapb.databinding.HomeBinding
 import com.example.uas__ppapb.model.DataMovie
+import com.example.uas__ppapb.model.LocalAdapter
+import com.example.uas__ppapb.model.MovieData
+import com.example.uas__ppapb.model.MovieFun
 import com.example.uas__ppapb.model.preferences
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.toObject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class Home : Fragment() {
     private lateinit var context: Context
@@ -59,7 +71,6 @@ class Home : Fragment() {
                 adapter.notifyDataSetChanged()
             }
             .addOnFailureListener {
-                // Handle failures
             }
 
         // Set username from Firebase Authentication
@@ -88,7 +99,6 @@ class Home : Fragment() {
             // Handle the case where the user is not signed in
             display.text = "User" // Provide a default message
         }
-
 
         return view
     }

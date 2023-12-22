@@ -14,18 +14,18 @@ import com.example.uas__ppapb.R
 import com.example.uas__ppapb.admin.DetailMovie
 import com.example.uas__ppapb.model.DataMovie
 
-class UserAdapter(private val context: Context, private val dataList: List<DataMovie>) :
-    RecyclerView.Adapter<UserAdapter.UserViewHolder>() {
+class DeskripsiAdapter(private val context: Context, private val dataList: List<DataMovie>) :
+    RecyclerView.Adapter<DeskripsiAdapter.DeskripsiViewHolder>() {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DeskripsiViewHolder {
         val view =
             LayoutInflater.from(parent.context).inflate(R.layout.movie_item, parent, false)
-        return UserViewHolder(view)
+        return DeskripsiViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: UserViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: DeskripsiViewHolder, position: Int) {
         holder.bind(dataList[position])
-        holder.itemView.setOnClickListener{
+        holder.itemView.setOnClickListener {
             val intent = Intent(holder.itemView.context, HomeDeskripsiActivity::class.java)
             intent.putExtra("Image", dataList[position].imageUrl)
             intent.putExtra("Description", dataList[position].description)
@@ -42,7 +42,7 @@ class UserAdapter(private val context: Context, private val dataList: List<DataM
         return dataList.size
     }
 
-    inner class UserViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    inner class DeskripsiViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private var recDate: TextView = itemView.findViewById(R.id.dateMov)
         private val recImage: ImageView = itemView.findViewById(R.id.img_movie_item)
         private val recCard: CardView = itemView.findViewById(R.id.cv_movie_item)

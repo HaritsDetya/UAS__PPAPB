@@ -38,7 +38,6 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { menuItem ->
             val fragment = when (menuItem.itemId) {
                 R.id.navigation_home -> Home()
-                R.id.navigation_bookmark -> Bookmark()
                 R.id.navigation_account -> Account()
                 else -> Home()
             }

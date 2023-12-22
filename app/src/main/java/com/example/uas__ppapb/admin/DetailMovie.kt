@@ -21,6 +21,7 @@ class DetailMovie : AppCompatActivity() {
     private lateinit var binding: DetailMovieBinding
     private var imageUrl = ""
     private var id = ""
+    private val db = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,47 +45,9 @@ class DetailMovie : AppCompatActivity() {
         }
 
         binding.deleteButton.setOnClickListener {
-            val firestore = FirebaseFirestore.getInstance()
-            val storage = FirebaseStorage.getInstance()
-
-            val docRef = firestore.collection("data_movie").document(id)
-            docRef.get()
-                .addOnSuccessListener { document ->
-                    if (document != null) {
-                        // Replace this line where you retrieve the imageUrl from Firestore document
-                        val imageUrl = document.get("imageUrl").toString()
-
-                        if (imageUrl.isNotEmpty()) {
-                            val storageReference = FirebaseStorage.getInstance().getReference(imageUrl)
-                            storageReference.delete()
-                                .addOnSuccessListener {
-                                    // Delete document from Firestore
-                                    firestore.collection("data_movie").document(id).delete()
-                                        .addOnSuccessListener {
-                                            Toast.makeText(this@DetailMovie, "Deleted", Toast.LENGTH_SHORT).show()
-                                            startActivity(Intent(applicationContext, ListMovieActivity::class.java))
-                                            finish()
-                                        }
-                                        .addOnFailureListener { e ->
-                                            Toast.makeText(this@DetailMovie, "Error deleting document: $e", Toast.LENGTH_SHORT).show()
-                                        }
-                                }
-                                .addOnFailureListener { e ->
-                                    Toast.makeText(this@DetailMovie, "Error deleting image: $e", Toast.LENGTH_SHORT).show()
-                                }
-                        } else {
-                            Toast.makeText(this@DetailMovie, "Image URL is empty", Toast.LENGTH_SHORT).show()
-                        }
-                    } else {
-                        Toast.makeText(this@DetailMovie, "Document not found", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                .addOnFailureListener { exception ->
-                    Toast.makeText(this@DetailMovie, "Error getting document: $exception", Toast.LENGTH_SHORT).show()
-                }
+            delete()
+            deleteMovie(id)
         }
-
-
 
         binding.editButton.setOnClickListener {
             val originalDate = binding.date.text.toString().replace("(", "").replace(")", "")
@@ -98,5 +61,34 @@ class DetailMovie : AppCompatActivity() {
                 .putExtra("Id", id)
             startActivity(intent)
         }
+    }
+
+    private fun delete() {
+        db.collection("data_movie").document()
+            .delete()
+            .addOnSuccessListener {
+                Toast.makeText(this, "Movie deleted successfully", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this@DetailMovie, ListMovieActivity::class.java)
+                startActivity(intent)
+                finish()
+            }
+            .addOnFailureListener { exception ->
+                Toast.makeText(this, "Error deleting movie: $exception", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun deleteMovie(movieId: String) {
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection("data_movie").document()
+            .delete()
+            .addOnSuccessListener {
+                // Document successfully deleted
+                Toast.makeText(this, "Movie deleted successfully", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                // Handle errors here
+                Toast.makeText(this, "Error deleting movie: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 }

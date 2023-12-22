@@ -4,7 +4,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -17,11 +17,14 @@
         android:theme="@style/Theme.UAS__PPAPB"
         tools:targetApi="31">
         <activity
+            android:name=".user.HomeDeskripsiActivity"
+            android:exported="false" />
+        <activity
             android:name=".admin.EditMovie"
-            android:exported="false"/>
+            android:exported="false" />
         <activity
             android:name=".user.MainActivity"
-            android:exported="false"/>
+            android:exported="false" />
         <activity
             android:name=".admin.DetailMovie"
             android:exported="false" />
@@ -31,9 +34,6 @@
         <activity
             android:name=".user.Account"
             android:exported="false" />
-        <activity
-            android:name=".user.Bookmark"
-            android:exported="false"/>
         <activity
             android:name=".user.Home"
             android:exported="false" />
@@ -52,6 +52,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

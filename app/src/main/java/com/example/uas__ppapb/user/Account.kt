@@ -46,13 +46,12 @@ class Account : Fragment() {
         binding.email.text = email1
 
         binding.logout.setOnClickListener {
-            // Clear the shared preferences on logout
-            val editor = sharedPreferences.edit()
-            editor.clear()
-            editor.apply()
+            sharedPreferences.edit().putBoolean("isLogin", false).apply()
 
             val intent = Intent(context, MainLoginRegisterActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)
+            requireActivity().finish()
         }
 
         val display: TextView = binding.username

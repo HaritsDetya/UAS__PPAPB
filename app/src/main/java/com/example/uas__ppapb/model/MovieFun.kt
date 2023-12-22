@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 
 @Dao
@@ -13,14 +14,14 @@ interface MovieFun {
     fun getAllMovie(): List<DataMovie>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    fun insertMovie(dataMovie: DataMovie)
+    fun insertAll(dataMovie: List<DataMovie>)
 
-    @Update
-    fun updateMovie(dataMovie: DataMovie)
-
-    @Delete
-    fun deleteMovie(dataMovie: DataMovie)
-
-    @Query("SELECT * FROM movie WHERE id = :id")
-    fun getMovieById(id: Int): DataMovie
+    @Transaction
+    fun insertMovie(dataMovie: List<DataMovie>) {
+        val existingMovies = getAllMovie()
+        val insert = dataMovie.filter { movie ->
+            existingMovies.none { it.title == movie.title && it.director == movie.director && it.description == movie.description }
+        }
+        val insertRow = insertAll(insert)
+    }
 }

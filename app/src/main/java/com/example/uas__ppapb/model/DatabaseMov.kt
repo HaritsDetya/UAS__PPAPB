@@ -29,6 +29,7 @@ abstract class DatabaseMov : RoomDatabase(){
                         context.applicationContext,
                         DatabaseMov::class.java, "movie_database"
                     )
+                        .fallbackToDestructiveMigration()
                         .build()
                 }
             }

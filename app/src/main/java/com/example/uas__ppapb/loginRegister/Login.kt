@@ -47,6 +47,9 @@ class Login : Fragment() {
         editor.putString("password", binding.passwordInput.text.toString().trim())
         editor.apply()
 
+        if (sharedPreferences.getBoolean("isLogin", false)) {
+            isUserAdmin(sharedPreferences.getString("email", "").toString())
+        }
 
         with(binding) {
             login.setOnClickListener {
@@ -68,8 +71,6 @@ class Login : Fragment() {
             }
         }
     }
-
-
 
     private fun isUserAdmin(email: String) {
         val user = firebaseAuth.currentUser
