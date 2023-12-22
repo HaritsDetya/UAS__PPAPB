@@ -64,7 +64,6 @@ class Register : Fragment() {
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
                                 val userId = firebaseAuth.currentUser?.uid
-//                                saveUserDataToRealtimeDatabase(userId, name, email)
                                 saveUserDataToFirestore(userId, name, email)
                                 startActivity(Intent(requireContext(), MainActivity::class.java).apply {
                                     putExtra(EXTRA_NAME, name)
@@ -84,24 +83,6 @@ class Register : Fragment() {
         }
     }
 
-//    private fun saveUserDataToRealtimeDatabase(userId:String?, name: String, email: String) {
-////        val idUser = database.child("users").push().key
-//
-//        userId?.let {
-//            val user = hashMapOf(
-//                "name" to name,
-//                "email" to email
-//            )
-//
-//            database.child(name).child(userId).setValue(user)
-//                .addOnSuccessListener {
-//                    Toast.makeText(requireContext(), "User data saved to Realtime Database", Toast.LENGTH_SHORT).show()
-//                }
-//                .addOnFailureListener {
-//                    Toast.makeText(requireContext(), "Failed to save user data", Toast.LENGTH_SHORT).show()
-//                }
-//        }
-//    }
     private fun saveUserDataToFirestore(userId: String?, name: String, email: String) {
         userId?.let {
             val user = hashMapOf(

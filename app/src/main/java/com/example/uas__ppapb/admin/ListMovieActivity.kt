@@ -6,6 +6,8 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.uas__ppapb.databinding.ListMovieBinding
+import com.example.uas__ppapb.loginRegister.Login
+import com.example.uas__ppapb.loginRegister.MainLoginRegisterActivity
 import com.example.uas__ppapb.model.DataMovie
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -47,6 +49,11 @@ class ListMovieActivity : AppCompatActivity() {
             .addOnFailureListener {
                 // Handle failures
             }
+
+        binding.logout.setOnClickListener {
+            val intent = Intent(this, MainLoginRegisterActivity::class.java)
+            startActivity(intent)
+        }
 
         binding.addIcon.setOnClickListener {
             val intent = Intent(this, AddMovie::class.java)

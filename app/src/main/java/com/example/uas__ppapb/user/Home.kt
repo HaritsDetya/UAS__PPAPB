@@ -2,18 +2,18 @@ package com.example.uas__ppapb.user
 
 import android.content.Context
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.uas__ppapb.R
 import com.example.uas__ppapb.databinding.HomeBinding
+import com.example.uas__ppapb.model.DataMovie
 import com.example.uas__ppapb.model.preferences
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
 
 class Home : Fragment() {
     private lateinit var context: Context
@@ -21,13 +21,11 @@ class Home : Fragment() {
     private lateinit var binding: HomeBinding
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: UserAdapter
+    private lateinit var dataList: MutableList<DataMovie>
+    private val db = FirebaseFirestore.getInstance()
 
-    private val database: DatabaseReference = FirebaseDatabase.getInstance().reference
+    private lateinit var firestore: FirebaseFirestore
     private lateinit var firebaseAuth: FirebaseAuth
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,40 +37,59 @@ class Home : Fragment() {
         context = requireContext()
         pref = preferences(context)
 
-        recyclerView = view.findViewById(R.id.rv_movie)
-        adapter = UserAdapter()
+        val gridLayoutManager = GridLayoutManager(requireContext(), 2)
+        binding.recycleMovie.layoutManager = gridLayoutManager
 
-        // Set Adapter on RecyclerView
-//        recyclerView.adapter = adapter
-//
-//        // Add data to the adapter if needed
-//        val dataList = // Your data source
-//            adapter.submitList(dataList)
+        dataList = mutableListOf<DataMovie>()
 
+        adapter = UserAdapter(requireContext(), dataList)
+        binding.recycleMovie.adapter = adapter
+
+        firestore = FirebaseFirestore.getInstance()
+        firebaseAuth = FirebaseAuth.getInstance()
+
+        // Fetch movie data from Firestore
+        firestore.collection("data_movie").get()
+            .addOnSuccessListener { result ->
+                dataList.clear()
+                for (document in result) {
+                    val dataClass = document.toObject(DataMovie::class.java)
+                    dataList.add(dataClass)
+                }
+                adapter.notifyDataSetChanged()
+            }
+            .addOnFailureListener {
+                // Handle failures
+            }
+
+        // Set username from Firebase Authentication
         val display: TextView = binding.username
-        val sharedPreferences = requireActivity().getSharedPreferences("SHARED_PREF", Context.MODE_PRIVATE)
+        val currentUser = firebaseAuth.currentUser
 
-        val username = sharedPreferences.getString("username", "")
-        val password = sharedPreferences.getString("password", "")
+        if (currentUser != null) {
+            val userId = currentUser.uid
+            val userDocRef = db.collection("users").document(userId)
 
-        display.text = "$username"
+            userDocRef.get()
+                .addOnSuccessListener { documentSnapshot ->
+                    if (documentSnapshot.exists()) {
+                        val username = documentSnapshot.getString("name")
+                        display.text = "$username"
+                    } else {
+                        // Handle the case where the document doesn't exist
+                        display.text = "User"
+                    }
+                }
+                .addOnFailureListener {
+                    // Handle failures
+                    display.text = "User" // Provide a default message
+                }
+        } else {
+            // Handle the case where the user is not signed in
+            display.text = "User" // Provide a default message
+        }
+
 
         return view
     }
-
-//    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-//        super.onViewCreated(view, savedInstanceState)
-//
-//        val display: TextView = binding.username
-//        val sharedPreferences = requireActivity().getSharedPreferences("SHARED_PREF", Context.MODE_PRIVATE)
-//
-//        val username = sharedPreferences.getString("username", "")
-//        val password = sharedPreferences.getString("password", "")
-//
-//        display.text = "$username"
-//
-////        binding.buttonFirst.setOnClickListener {
-////            findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
-////        }
-//    }
 }

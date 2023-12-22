@@ -17,10 +17,11 @@ import com.google.firebase.storage.StorageReference
 import com.google.firebase.storage.UploadTask
 
 class EditMovie : AppCompatActivity() {
-    private lateinit var uri: Uri
+    private var uri: Uri? = null
     private lateinit var id: String
     private lateinit var oldImageURL: String
     private lateinit var imageUrl: String
+
 
     private lateinit var binding: EditMovieBinding
     private val db = FirebaseFirestore.getInstance()
@@ -35,12 +36,17 @@ class EditMovie : AppCompatActivity() {
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
                 if (result.resultCode == Activity.RESULT_OK) {
                     val data: Intent? = result.data
-                    uri = data?.data ?: Uri.EMPTY
-                    binding.imgAddMovie.setImageURI(uri)
+                    uri = data?.data
+                    if (uri != null) {
+                        binding.imgAddMovie.setImageURI(uri)
+                    } else {
+                        Toast.makeText(this@EditMovie, "Failed to get image URI", Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     Toast.makeText(this@EditMovie, "No Image Selected", Toast.LENGTH_SHORT).show()
                 }
             }
+
 
         val bundle = intent.extras
         if (bundle != null) {
@@ -69,34 +75,40 @@ class EditMovie : AppCompatActivity() {
     }
 
     private fun saveData() {
-        val storageReference: StorageReference =
-            FirebaseStorage.getInstance().reference.child("Android Images")
-                .child(uri?.lastPathSegment!!)
+        // Check if uri is not null before using it
+        if (uri != null) {
+            val storageReference: StorageReference =
+                FirebaseStorage.getInstance().reference.child("Android Images")
+                    .child(uri?.lastPathSegment!!)
 
-        storageReference.putFile(uri!!)
-            .addOnSuccessListener {
-                storageReference.downloadUrl.addOnCompleteListener { uriTask ->
-                    if (uriTask.isSuccessful) {
-                        val urlImage = uriTask.result.toString()
-                        imageUrl = urlImage
-                        updateData()
-                    } else {
-                        Toast.makeText(
-                            this@EditMovie,
-                            "Failed to get download URL",
-                            Toast.LENGTH_SHORT
-                        ).show()
+            storageReference.putFile(uri!!)
+                .addOnSuccessListener {
+                    storageReference.downloadUrl.addOnCompleteListener { uriTask ->
+                        if (uriTask.isSuccessful) {
+                            val urlImage = uriTask.result.toString()
+                            imageUrl = urlImage
+                            updateData()
+                        } else {
+                            Toast.makeText(
+                                this@EditMovie,
+                                "Failed to get download URL",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(
-                    this@EditMovie,
-                    "Failed to upload image: ${e.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+                .addOnFailureListener { e ->
+                    Toast.makeText(
+                        this@EditMovie,
+                        "Failed to upload image: ${e.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+        } else {
+            Toast.makeText(this@EditMovie, "Uri is null", Toast.LENGTH_SHORT).show()
+        }
     }
+
 
     private fun updateData() {
         val title = binding.titleInput.text.toString().trim()

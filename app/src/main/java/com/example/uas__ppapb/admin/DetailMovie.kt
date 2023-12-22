@@ -51,12 +51,11 @@ class DetailMovie : AppCompatActivity() {
             docRef.get()
                 .addOnSuccessListener { document ->
                     if (document != null) {
-                        // Correctly retrieve imageUrl from Firestore document
+                        // Replace this line where you retrieve the imageUrl from Firestore document
                         val imageUrl = document.get("imageUrl").toString()
 
-                        // Delete image from Storage
-                        if (imageUrl != null) {
-                            val storageReference = storage.getReferenceFromUrl(imageUrl)
+                        if (imageUrl.isNotEmpty()) {
+                            val storageReference = FirebaseStorage.getInstance().getReference(imageUrl)
                             storageReference.delete()
                                 .addOnSuccessListener {
                                     // Delete document from Firestore
@@ -74,7 +73,7 @@ class DetailMovie : AppCompatActivity() {
                                     Toast.makeText(this@DetailMovie, "Error deleting image: $e", Toast.LENGTH_SHORT).show()
                                 }
                         } else {
-                            Toast.makeText(this@DetailMovie, "Image URL is null", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@DetailMovie, "Image URL is empty", Toast.LENGTH_SHORT).show()
                         }
                     } else {
                         Toast.makeText(this@DetailMovie, "Document not found", Toast.LENGTH_SHORT).show()
